@@ -9,6 +9,7 @@ import com.google.gson.stream.JsonWriter;
 import com.mojang.brigadier.Command;
 import com.mojang.brigadier.tree.ArgumentCommandNode;
 import com.mojang.brigadier.tree.LiteralCommandNode;
+import de.slevermann.fabric.coordreminder.command.ClearCoordinateCommand;
 import de.slevermann.fabric.coordreminder.command.DeleteCoordinateCommand;
 import de.slevermann.fabric.coordreminder.command.GetCoordinateCommand;
 import de.slevermann.fabric.coordreminder.command.ListCoordinateCommand;
@@ -65,6 +66,7 @@ public class CoordReminder implements DedicatedServerModInitializer {
         final TeleportCoordinateCommand teleportCommand = new TeleportCoordinateCommand(savedCoordinates);
         final ListCoordinateCommand listCommand = new ListCoordinateCommand(savedCoordinates);
         final ShareCoordinateCommand shareCommand = new ShareCoordinateCommand(savedCoordinates);
+        final ClearCoordinateCommand clearCommand = new ClearCoordinateCommand(savedCoordinates);
 
         final LiteralCommandNode<ServerCommandSource> coordNode = CommandManager
                 .literal("coord").build();
@@ -98,6 +100,11 @@ public class CoordReminder implements DedicatedServerModInitializer {
                 .literal("share").build();
         coordNode.addChild(shareNode);
         shareNode.addChild(getNameArgNode(shareCommand));
+
+        final LiteralCommandNode<ServerCommandSource> clearNode = CommandManager
+                .literal("clear")
+                .executes(clearCommand).build();
+        coordNode.addChild(clearNode);
 
         CommandRegistrationCallback.EVENT.register(((dispatcher, dedicated) ->
                 dispatcher.getRoot().addChild(coordNode)));

@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "id": "coordreminder",
+  "version": "${version}",
+
+  "name": "Coord Reminder",
+  "description": "Remembering (and teleporting to) coordinates saved by players",
+  "authors": [
+    "Simon Levermann (sonOfRa)"
+  ],
+  "contact": {
+    "sources": "https://github.com/sonOfRa/fabric-coordreminder"
+  },
+
+  "license": "Apache-2.0",
+
+  "environment": "server",
+  "entrypoints": {
+    "server": [
+      "de.slevermann.fabric.coordreminder.CoordReminder"
+    ]
+  },
+  "depends": {
+    "fabricloader": ">=0.11.3",
+    "fabric": "*",
+    "minecraft": "1.18.x",
+    "java": ">=17"
+  }
+}

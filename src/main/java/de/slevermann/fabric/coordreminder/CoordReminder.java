@@ -18,7 +18,7 @@ import de.slevermann.fabric.coordreminder.command.SetCoordinateCommand;
 import de.slevermann.fabric.coordreminder.command.ShareCoordinateCommand;
 import de.slevermann.fabric.coordreminder.command.TeleportCoordinateCommand;
 import net.fabricmc.api.DedicatedServerModInitializer;
-import net.fabricmc.fabric.api.command.v1.CommandRegistrationCallback;
+import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.command.CommandManager;
@@ -106,8 +106,8 @@ public class CoordReminder implements DedicatedServerModInitializer {
                 .executes(clearCommand).build();
         coordNode.addChild(clearNode);
 
-        CommandRegistrationCallback.EVENT.register(((dispatcher, dedicated) ->
-                dispatcher.getRoot().addChild(coordNode)));
+        CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) ->
+                dispatcher.getRoot().addChild(coordNode));
 
         registerStartupEvent();
 

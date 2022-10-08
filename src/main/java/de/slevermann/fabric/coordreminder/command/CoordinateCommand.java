@@ -6,14 +6,16 @@ import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import de.slevermann.fabric.coordreminder.Coordinate;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.text.LiteralText;
 import net.minecraft.text.MutableText;
+import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+
+import static net.minecraft.text.Text.literal;
 
 public abstract class CoordinateCommand implements Command<ServerCommandSource> {
 
@@ -37,14 +39,14 @@ public abstract class CoordinateCommand implements Command<ServerCommandSource> 
     }
 
     public final MutableText formatCoordinateforChat(Coordinate coord) {
-        return new LiteralText("")
-                .append(new LiteralText(String.format("World: %s", coord.getDimension())).formatted(Formatting.AQUA))
-                .append(new LiteralText("; "))
-                .append(new LiteralText(String.format("X: %d", coord.getX())).formatted(Formatting.RED))
-                .append(new LiteralText("; "))
-                .append(new LiteralText(String.format("Y: %d", coord.getY())).formatted(Formatting.GREEN))
-                .append(new LiteralText("; "))
-                .append(new LiteralText(String.format("Z: %d", coord.getZ())).formatted(Formatting.BLUE));
+        return literal("")
+                .append(literal(String.format("World: %s", coord.getDimension())).formatted(Formatting.AQUA))
+                .append(literal("; "))
+                .append(literal(String.format("X: %d", coord.getX())).formatted(Formatting.RED))
+                .append(literal("; "))
+                .append(literal(String.format("Y: %d", coord.getY())).formatted(Formatting.GREEN))
+                .append(literal("; "))
+                .append(literal(String.format("Z: %d", coord.getZ())).formatted(Formatting.BLUE));
     }
 
     public final Map<String, Coordinate> getPlayerMap(CommandContext<ServerCommandSource> context) throws CommandSyntaxException {

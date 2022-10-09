@@ -41,6 +41,7 @@ import static com.mojang.brigadier.arguments.StringArgumentType.string;
 
 public class CoordReminder implements DedicatedServerModInitializer {
 
+    public static final UUID GLOBAL_COORDINATE_UUID = UUID.fromString("4c6b776e-1aa4-448b-a507-12c70461ff03");
 
     private static final Logger LOGGER = LoggerFactory.getLogger(CoordReminder.class);
 
@@ -59,52 +60,67 @@ public class CoordReminder implements DedicatedServerModInitializer {
     @Override
     public void onInitializeServer() {
         LOGGER.info("Launching CoordReminder");
+        final var coordNode = CommandManager.literal("coord").build();
 
-        final GetCoordinateCommand getCommand = new GetCoordinateCommand(savedCoordinates);
-        final SetCoordinateCommand setCommand = new SetCoordinateCommand(savedCoordinates);
-        final DeleteCoordinateCommand deleteCommand = new DeleteCoordinateCommand(savedCoordinates);
-        final TeleportCoordinateCommand teleportCommand = new TeleportCoordinateCommand(savedCoordinates);
-        final ListCoordinateCommand listCommand = new ListCoordinateCommand(savedCoordinates);
-        final ShareCoordinateCommand shareCommand = new ShareCoordinateCommand(savedCoordinates);
-        final ClearCoordinateCommand clearCommand = new ClearCoordinateCommand(savedCoordinates);
-
-        final LiteralCommandNode<ServerCommandSource> coordNode = CommandManager
-                .literal("coord").build();
-
-        final LiteralCommandNode<ServerCommandSource> getNode = CommandManager
-                .literal("get").build();
-        coordNode.addChild(getNode);
-        getNode.addChild(getNameArgNode(getCommand));
-
-        final LiteralCommandNode<ServerCommandSource> setNode = CommandManager
-                .literal("set").build();
+        final var setNode = CommandManager.literal("set").build();
         coordNode.addChild(setNode);
-        setNode.addChild(getNameArgNode(setCommand, false));
+        setNode.addChild(getNameArgNode(new SetCoordinateCommand(savedCoordinates, false), false));
 
-        final LiteralCommandNode<ServerCommandSource> deleteNode = CommandManager
-                .literal("delete").build();
+        final var getNode = CommandManager.literal("get").build();
+        coordNode.addChild(getNode);
+        getNode.addChild(getNameArgNode(new GetCoordinateCommand(savedCoordinates, false), false, true));
+
+        final var deleteNode = CommandManager.literal("delete").build();
         coordNode.addChild(deleteNode);
-        deleteNode.addChild(getNameArgNode(deleteCommand));
+        deleteNode.addChild(getNameArgNode(new DeleteCoordinateCommand(savedCoordinates, false), false, true));
 
-        final LiteralCommandNode<ServerCommandSource> teleportNode = CommandManager
-                .literal("tp").build();
+        final var teleportNode = CommandManager.literal("tp").build();
         coordNode.addChild(teleportNode);
-        teleportNode.addChild(getNameArgNode(teleportCommand));
+        teleportNode.addChild(getNameArgNode(new TeleportCoordinateCommand(savedCoordinates, false), false, true));
 
-        final LiteralCommandNode<ServerCommandSource> listNode = CommandManager
-                .literal("list")
-                .executes(listCommand).build();
+        final var listNode = CommandManager.literal("list")
+                .executes(new ListCoordinateCommand(savedCoordinates, false)).build();
         coordNode.addChild(listNode);
 
-        final LiteralCommandNode<ServerCommandSource> shareNode = CommandManager
-                .literal("share").build();
+        final var shareNode = CommandManager.literal("share").build();
         coordNode.addChild(shareNode);
-        shareNode.addChild(getNameArgNode(shareCommand));
+        shareNode.addChild(getNameArgNode(new ShareCoordinateCommand(savedCoordinates, false), false, true));
 
-        final LiteralCommandNode<ServerCommandSource> clearNode = CommandManager
-                .literal("clear")
-                .executes(clearCommand).build();
+        final var clearNode = CommandManager.literal("clear")
+                .executes(new ClearCoordinateCommand(savedCoordinates, false)).build();
         coordNode.addChild(clearNode);
+
+        // Setup Global commands
+        final var globalNode = CommandManager.literal("global").build();
+        coordNode.addChild(globalNode);
+
+        final var globalSetNode = CommandManager.literal("set").build();
+        globalNode.addChild(globalSetNode);
+        globalSetNode.addChild(getNameArgNode(new SetCoordinateCommand(savedCoordinates, true), true, false));
+
+        final var globalGetNode = CommandManager.literal("get").build();
+        globalNode.addChild(globalGetNode);
+        globalGetNode.addChild(getNameArgNode(new GetCoordinateCommand(savedCoordinates, true), true, true));
+
+        final var globalDeleteNode = CommandManager.literal("delete").build();
+        globalNode.addChild(globalDeleteNode);
+        globalDeleteNode.addChild(getNameArgNode(new DeleteCoordinateCommand(savedCoordinates, true), true, true));
+
+        final var globalTeleportNode = CommandManager.literal("tp").build();
+        globalNode.addChild(globalTeleportNode);
+        globalTeleportNode.addChild(getNameArgNode(new TeleportCoordinateCommand(savedCoordinates, true), true, true));
+
+        final var globalListNode = CommandManager.literal("list")
+                .executes(new ListCoordinateCommand(savedCoordinates, true)).build();
+        globalNode.addChild(globalListNode);
+
+        final var globalShareNode = CommandManager.literal("share").build();
+        globalNode.addChild(globalShareNode);
+        globalShareNode.addChild(getNameArgNode(new ShareCoordinateCommand(savedCoordinates, true), true, true));
+
+        final var globalClearNode = CommandManager.literal("clear")
+                .executes(new ClearCoordinateCommand(savedCoordinates, true)).build();
+        globalNode.addChild(globalClearNode);
 
         CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) ->
                 dispatcher.getRoot().addChild(coordNode));
@@ -115,9 +131,15 @@ public class CoordReminder implements DedicatedServerModInitializer {
     }
 
     private ArgumentCommandNode<ServerCommandSource, String> getNameArgNode(Command<ServerCommandSource> command, boolean autocomplete) {
+        return getNameArgNode(command, false, autocomplete);
+    }
+
+    private ArgumentCommandNode<ServerCommandSource, String> getNameArgNode(final Command<ServerCommandSource> command,
+                                                                            final boolean global,
+                                                                            final boolean autocomplete) {
         final var comm = CommandManager.argument("name", string());
         if (autocomplete) {
-            comm.suggests(new NameSuggestionProvider(savedCoordinates));
+            comm.suggests(new NameSuggestionProvider(savedCoordinates, global));
         }
         return comm.executes(command).build();
     }

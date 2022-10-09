@@ -10,19 +10,24 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
+import static java.lang.String.format;
+import static net.minecraft.text.Text.of;
+
 public class DeleteCoordinateCommand extends NamedCoordinateCommand {
 
-    public DeleteCoordinateCommand(ConcurrentHashMap<UUID, Map<String, Coordinate>> savedCoordinates) {
-        super(savedCoordinates);
+    public DeleteCoordinateCommand(final ConcurrentHashMap<UUID, Map<String, Coordinate>> savedCoordinates,
+                                   final boolean global) {
+        super(savedCoordinates, global);
     }
 
     @Override
-    public int runCommand(CommandContext<ServerCommandSource> context) throws CommandSyntaxException {
+    public int runCommand(CommandContext<ServerCommandSource> context) {
         final Coordinate coord = getCoordinate(context);
 
         if (coord != null) {
-            getPlayerMap(context).remove(getName(context));
-            getPlayer(context).sendMessage(Text.of(String.format("Deleted coordinate %s", getName(context))), false);
+            getCoordinateMap(context).remove(getCoordinateName(context));
+            getPlayer(context).sendMessage(of(format("Deleted %s coordinate %s", global ? "global" : "personal",
+                    getCoordinateName(context))), false);
             return 1;
         }
         missingCoordinate(context);

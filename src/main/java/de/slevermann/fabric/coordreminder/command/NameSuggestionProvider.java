@@ -5,6 +5,7 @@ import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.suggestion.SuggestionProvider;
 import com.mojang.brigadier.suggestion.Suggestions;
 import com.mojang.brigadier.suggestion.SuggestionsBuilder;
+
 import de.slevermann.fabric.coordreminder.Coordinate;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -15,19 +16,27 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 
+import static de.slevermann.fabric.coordreminder.CoordReminder.GLOBAL_COORDINATE_UUID;
+
 public class NameSuggestionProvider implements SuggestionProvider<ServerCommandSource> {
 
-    protected final ConcurrentHashMap<UUID, Map<String, Coordinate>> savedCoordinates;
+    private final ConcurrentHashMap<UUID, Map<String, Coordinate>> savedCoordinates;
 
-    public NameSuggestionProvider(ConcurrentHashMap<UUID, Map<String, Coordinate>> savedCoordinates) {
+    private final boolean global;
+
+    public NameSuggestionProvider(final ConcurrentHashMap<UUID, Map<String, Coordinate>> savedCoordinates,
+                                  final boolean global) {
         this.savedCoordinates = savedCoordinates;
+        this.global = global;
     }
 
     @Override
-    public CompletableFuture<Suggestions> getSuggestions(CommandContext<ServerCommandSource> context, SuggestionsBuilder builder) throws CommandSyntaxException {
-        savedCoordinates.putIfAbsent(getPlayer(context).getUuid(), new HashMap<>());
-        final Map<String, Coordinate> playerCoordinates = savedCoordinates.get(getPlayer(context).getUuid());
-        for (String name : playerCoordinates.keySet()) {
+    public CompletableFuture<Suggestions> getSuggestions(final CommandContext<ServerCommandSource> context,
+                                                         final SuggestionsBuilder builder) {
+        final var uuid = global ? GLOBAL_COORDINATE_UUID : getPlayer(context).getUuid();
+        savedCoordinates.putIfAbsent(uuid, new HashMap<>());
+        final Map<String, Coordinate> coordinates = savedCoordinates.get(uuid);
+        for (String name : coordinates.keySet()) {
             if (name.startsWith(builder.getRemaining())) {
                 builder.suggest(name);
             }
@@ -35,7 +44,7 @@ public class NameSuggestionProvider implements SuggestionProvider<ServerCommandS
         return builder.buildFuture();
     }
 
-    private ServerPlayerEntity getPlayer(CommandContext<ServerCommandSource> context) throws CommandSyntaxException {
+    private ServerPlayerEntity getPlayer(final CommandContext<ServerCommandSource> context) {
         return context.getSource().getPlayer();
     }
 

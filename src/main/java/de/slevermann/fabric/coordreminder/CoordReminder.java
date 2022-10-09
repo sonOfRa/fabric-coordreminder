@@ -9,14 +9,7 @@ import com.google.gson.stream.JsonWriter;
 import com.mojang.brigadier.Command;
 import com.mojang.brigadier.tree.ArgumentCommandNode;
 import com.mojang.brigadier.tree.LiteralCommandNode;
-import de.slevermann.fabric.coordreminder.command.ClearCoordinateCommand;
-import de.slevermann.fabric.coordreminder.command.DeleteCoordinateCommand;
-import de.slevermann.fabric.coordreminder.command.GetCoordinateCommand;
-import de.slevermann.fabric.coordreminder.command.ListCoordinateCommand;
-import de.slevermann.fabric.coordreminder.command.NameSuggestionProvider;
-import de.slevermann.fabric.coordreminder.command.SetCoordinateCommand;
-import de.slevermann.fabric.coordreminder.command.ShareCoordinateCommand;
-import de.slevermann.fabric.coordreminder.command.TeleportCoordinateCommand;
+import de.slevermann.fabric.coordreminder.command.*;
 import net.fabricmc.api.DedicatedServerModInitializer;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
@@ -64,7 +57,7 @@ public class CoordReminder implements DedicatedServerModInitializer {
 
         final var setNode = CommandManager.literal("set").build();
         coordNode.addChild(setNode);
-        setNode.addChild(getNameArgNode(new SetCoordinateCommand(savedCoordinates, false), false));
+        setNode.addChild(getNameArgNode(new SetCoordinateCommand(savedCoordinates, false), false, false));
 
         final var getNode = CommandManager.literal("get").build();
         coordNode.addChild(getNode);
@@ -89,6 +82,14 @@ public class CoordReminder implements DedicatedServerModInitializer {
         final var clearNode = CommandManager.literal("clear")
                 .executes(new ClearCoordinateCommand(savedCoordinates, false)).build();
         coordNode.addChild(clearNode);
+
+        final var renameNode = CommandManager.literal("rename").build();
+        coordNode.addChild(renameNode);
+        renameNode.addChild(getNewNameNode(new RenameCommand(savedCoordinates, false), false));
+
+        final var promoteNode = CommandManager.literal("promote").build();
+        coordNode.addChild(promoteNode);
+        promoteNode.addChild(getNewNameNode(new PromoteCommand(savedCoordinates), false));
 
         // Setup Global commands
         final var globalNode = CommandManager.literal("global").build();
@@ -122,16 +123,16 @@ public class CoordReminder implements DedicatedServerModInitializer {
                 .executes(new ClearCoordinateCommand(savedCoordinates, true)).build();
         globalNode.addChild(globalClearNode);
 
+        final var globalRenameNode = CommandManager.literal("rename").build();
+        globalNode.addChild(globalRenameNode);
+        globalRenameNode.addChild(getNewNameNode(new RenameCommand(savedCoordinates, true), true));
+
         CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) ->
                 dispatcher.getRoot().addChild(coordNode));
 
         registerStartupEvent();
 
         registerShutdownEvent();
-    }
-
-    private ArgumentCommandNode<ServerCommandSource, String> getNameArgNode(Command<ServerCommandSource> command, boolean autocomplete) {
-        return getNameArgNode(command, false, autocomplete);
     }
 
     private ArgumentCommandNode<ServerCommandSource, String> getNameArgNode(final Command<ServerCommandSource> command,
@@ -144,8 +145,14 @@ public class CoordReminder implements DedicatedServerModInitializer {
         return comm.executes(command).build();
     }
 
-    private ArgumentCommandNode<ServerCommandSource, String> getNameArgNode(Command<ServerCommandSource> command) {
-        return getNameArgNode(command, true);
+    private ArgumentCommandNode<ServerCommandSource, String> getNewNameNode(final Command<ServerCommandSource> command,
+                                                                               final boolean global) {
+        final var nameComm = CommandManager.argument("name", string());
+        nameComm.suggests(new NameSuggestionProvider(savedCoordinates, global));
+        final var node = nameComm.build();
+        final var comm = CommandManager.argument("newName", string());
+        node.addChild(comm.executes(command).build());
+        return node;
     }
 
     private void registerShutdownEvent() {

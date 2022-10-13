@@ -2,59 +2,58 @@ package de.slevermann.fabric.coordreminder.command;
 
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
-import de.slevermann.fabric.coordreminder.Coordinate;
+import com.mojang.brigadier.exceptions.Dynamic4CommandExceptionType;
+import de.slevermann.fabric.coordreminder.db.CoordinateService;
 import net.minecraft.server.command.ServerCommandSource;
-import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.registry.Registry;
 import net.minecraft.util.registry.RegistryKey;
 import net.minecraft.world.World;
 
-import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
-
 import static java.lang.String.format;
+import static net.minecraft.text.Text.literal;
 import static net.minecraft.text.Text.of;
 import static net.minecraft.util.Identifier.tryParse;
 import static net.minecraft.util.registry.RegistryKey.ofRegistry;
 
 public class TeleportCoordinateCommand extends NamedCoordinateCommand {
 
-    private static final RegistryKey<Registry<World>> REGISTRY = ofRegistry(tryParse("minecraft:dimension"));
+    protected static final Dynamic4CommandExceptionType WORLD_NOT_FOUND = new Dynamic4CommandExceptionType((a, b, c, d) ->
+            of(format("World (%s[%s]) for %s coordinate with name %s not found!",
+                    a, b, ((boolean) c) ? "global" : "personal", d)));
 
-    public TeleportCoordinateCommand(final ConcurrentHashMap<UUID, Map<String, Coordinate>> savedCoordinates) {
-        this(savedCoordinates, false);
-    }
-
-    public TeleportCoordinateCommand(final ConcurrentHashMap<UUID, Map<String, Coordinate>> savedCoordinates,
-                                     final boolean global) {
-        super(savedCoordinates, global);
+    public TeleportCoordinateCommand(final CoordinateService coordinateService, final boolean global) {
+        super(coordinateService, global);
     }
 
     @Override
-    public int runCommand(final CommandContext<ServerCommandSource> context) {
-        final Coordinate coord = getCoordinate(context);
+    public int run(final CommandContext<ServerCommandSource> context) throws CommandSyntaxException {
+        final var coordinateName = getCoordinateName(context);
+        final var coordinate = getCoordinate(context);
 
-        if (coord != null) {
-            final ServerPlayerEntity player = getPlayer(context);
-            final RegistryKey<World> key = RegistryKey.of(REGISTRY, tryParse(coord.getDimension()));
-            if (key == null) {
-                player.sendMessage(of(format("World %s for %s coordinate %s does not exist", coord.getDimension(),
-                        global ? "global" : "personal", getCoordinateName(context))), false);
-                return -1;
-            }
-            final ServerWorld world = context.getSource().getServer().getWorld(key);
-            if (world == null) {
-                player.sendMessage(of(format("World %s for %s coordinate %s does not exist", coord.getDimension(),
-                                global ? "global" : "personal", getCoordinateName(context))),
-                        false);
-                return -1;
-            }
-            player.teleport(world, coord.getX(), coord.getY(), coord.getZ(), player.getYaw(), player.getPitch());
-            return 1;
+        if (coordinate == null) {
+            throw COORDINATE_NOT_FOUND.create(global, coordinateName);
         }
-        missingCoordinate(context);
-        return -2;
+        final RegistryKey<Registry<World>> registry = ofRegistry(tryParse(coordinate.registry()));
+        final ServerWorld world;
+        if (registry == null) {
+            world = null;
+        } else {
+            final var key = RegistryKey.of(registry, tryParse(coordinate.registryValue()));
+            if (key == null) {
+                world = null;
+            } else {
+                world = context.getSource().getServer().getWorld(key);
+            }
+        }
+
+        if (world == null) {
+            throw WORLD_NOT_FOUND.create(coordinate.registry(), coordinate.registryValue(), global, coordinateName);
+        }
+        final var player = getPlayer(context);
+        player.teleport(world, coordinate.x(), coordinate.y(), coordinate.z(), player.getYaw(), player.getPitch());
+        context.getSource().sendFeedback(literal("Teleported to: ").append(formatCoordinateforChat(coordinate)),
+                false);
+        return SINGLE_SUCCESS;
     }
 }

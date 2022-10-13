@@ -2,41 +2,41 @@ package de.slevermann.fabric.coordreminder.command;
 
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
-import de.slevermann.fabric.coordreminder.Coordinate;
-import net.minecraft.entity.player.PlayerEntity;
+import de.slevermann.fabric.coordreminder.db.CoordinateService;
+import de.slevermann.fabric.coordreminder.db.DbCoordinate;
 import net.minecraft.server.command.ServerCommandSource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
+import java.sql.SQLException;
 
 import static java.lang.String.format;
 import static net.minecraft.text.Text.of;
 
 public class SetCoordinateCommand extends NamedCoordinateCommand {
 
-    public SetCoordinateCommand(final ConcurrentHashMap<UUID, Map<String, Coordinate>> savedCoordinates,
-                                boolean global) {
-        super(savedCoordinates, global);
+    private static final Logger LOGGER = LoggerFactory.getLogger(SetCoordinateCommand.class);
+
+    public SetCoordinateCommand(final CoordinateService coordinateService, final boolean global) {
+        super(coordinateService, global);
     }
 
     @Override
-    public int runCommand(final CommandContext<ServerCommandSource> context) {
-        final Coordinate coord = getCoordinate(context);
-        final var coordName = getCoordinateName(context);
-        if (coord == null) {
-            final PlayerEntity player = getPlayer(context);
-            final String dimension = player.getWorld().getRegistryKey().getValue().toString();
-            final Coordinate newCoordinate = new Coordinate(dimension, player.getBlockX(), player.getBlockY(),
-                    player.getBlockZ());
-            getCoordinateMap(context).put(coordName, newCoordinate);
-            player.sendMessage(of(format("Saved %s coordinate %s at the current location",
-                    global ? "global" : "personal", coordName)), false);
-            return 1;
+    public int run(final CommandContext<ServerCommandSource> context) throws CommandSyntaxException {
+        final var coordinateName = getCoordinateName(context);
+        final var player = getPlayer(context);
+        final var registry = player.getWorld().getRegistryKey().getRegistry().toString();
+        final var registryValue = player.getWorld().getRegistryKey().getValue().toString();
+        final var coordinate = new DbCoordinate(coordinateName, registry, registryValue, getUuid(context),
+                player.getX(), player.getY(), player.getZ());
+        try {
+            if (!coordinateService.createCoordinate(coordinate)) {
+                throw COORDINATE_EXISTS.create(global, coordinateName);
+            }
+        } catch (final SQLException e) {
+            throw DB_ERROR.create(LOGGER, e);
         }
-        getPlayer(context)
-                .sendMessage(of(format("%s coordinate %s already exists. Must be deleted before it can be reused",
-                        global ? "Global" : "Personal", coordName)), false);
-        return -1;
+        context.getSource().sendFeedback(of(format("Coordinate %s created", coordinateName)), false);
+        return SINGLE_SUCCESS;
     }
 }

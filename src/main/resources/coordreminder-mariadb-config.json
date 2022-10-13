@@ -1,0 +1,6 @@
+{
+  "jdbcUrl": "jdbc:mariadb://localhost:3306/coordreminder",
+  "dbUser": "coorduser",
+  "dbPassword": "coordpassword",
+  "databaseType": "mariadb"
+}

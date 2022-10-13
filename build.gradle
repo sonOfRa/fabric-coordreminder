@@ -26,6 +26,21 @@ dependencies {
 
 	// Fabric API. This is technically optional, but you probably want it anyway.
 	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
+
+	modImplementation "com.zaxxer:HikariCP:5.0.1"
+	modImplementation "org.flywaydb:flyway-core:9.4.0"
+	modImplementation "org.flywaydb:flyway-mysql:9.4.0"
+	modImplementation "com.h2database:h2:2.1.214"
+	modImplementation "org.mariadb.jdbc:mariadb-java-client:3.0.8"
+
+	// SQL dependencies
+	include "com.h2database:h2:2.1.214"
+	include "org.mariadb.jdbc:mariadb-java-client:3.0.8"
+	include "com.zaxxer:HikariCP:5.0.1"
+	include "org.flywaydb:flyway-core:9.4.0"
+	include "org.flywaydb:flyway-mysql:9.4.0"
+	include "com.electronwill.night-config:toml:3.6.6" // Dependency of Flyway
+	include "com.electronwill.night-config:core:3.6.6" // Dependency of night-config toml
 }
 
 processResources {

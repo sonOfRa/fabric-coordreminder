@@ -1,35 +1,45 @@
 package de.slevermann.fabric.coordreminder.command;
 
 import com.mojang.brigadier.context.CommandContext;
-import de.slevermann.fabric.coordreminder.Coordinate;
+import com.mojang.brigadier.exceptions.CommandSyntaxException;
+import de.slevermann.fabric.coordreminder.db.CoordinateService;
+import de.slevermann.fabric.coordreminder.db.DbCoordinate;
 import net.minecraft.server.command.ServerCommandSource;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.text.MutableText;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
+import java.sql.SQLException;
+import java.util.List;
 
 import static java.lang.String.format;
 import static net.minecraft.text.Text.literal;
-import static net.minecraft.text.Text.of;
 
 public class ListCoordinateCommand extends CoordinateCommand {
 
-    public ListCoordinateCommand(final ConcurrentHashMap<UUID, Map<String, Coordinate>> savedCoordinates,
-                                 final boolean global) {
-        super(savedCoordinates, global);
+    private static final Logger LOGGER = LoggerFactory.getLogger(ListCoordinateCommand.class);
+
+    public ListCoordinateCommand(final CoordinateService coordinateService, final boolean global) {
+        super(coordinateService, global);
     }
 
     @Override
-    public int runCommand(final CommandContext<ServerCommandSource> context) {
-        final ServerPlayerEntity player = getPlayer(context);
-        player.sendMessage(of(format("List of %s coordinates:", global ? "global" : "personal")), false);
-        for (Map.Entry<String, Coordinate> coordinate : getCoordinateMap(context).entrySet()) {
-            final MutableText text = literal(coordinate.getKey() + ": ")
-                    .append(formatCoordinateforChat(coordinate.getValue()));
-            player.sendMessage(text, false);
+    public int run(final CommandContext<ServerCommandSource> context) throws CommandSyntaxException {
+        final List<DbCoordinate> coordinates;
+        try {
+            coordinates = coordinateService.listCoordinates(getUuid(context));
+        } catch (SQLException e) {
+            throw DB_ERROR.create(LOGGER, e);
         }
-        return 1;
+
+        final var text = literal(format("List of %s coordinates:%n", global ? "global" : "personal"));
+        for (int i = 0; i < coordinates.size(); i++) {
+            final var coord = coordinates.get(i);
+            text.append(format("%s: ", coord.name())).append(formatCoordinateforChat(coord));
+            if (i < coordinates.size() - 1) {
+                text.append(System.lineSeparator());
+            }
+        }
+        context.getSource().sendFeedback(text, false);
+        return SINGLE_SUCCESS;
     }
 }

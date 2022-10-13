@@ -1,38 +1,29 @@
 package de.slevermann.fabric.coordreminder.command;
 
 import com.mojang.brigadier.context.CommandContext;
-import de.slevermann.fabric.coordreminder.Coordinate;
+import com.mojang.brigadier.exceptions.CommandSyntaxException;
+import de.slevermann.fabric.coordreminder.db.CoordinateService;
 import net.minecraft.server.command.ServerCommandSource;
-import net.minecraft.text.MutableText;
 
-import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
-
+import static java.lang.String.format;
 import static net.minecraft.text.Text.literal;
 
 public class ShareCoordinateCommand extends NamedCoordinateCommand {
 
-    public ShareCoordinateCommand(final ConcurrentHashMap<UUID, Map<String, Coordinate>> savedCoordinates) {
-        super(savedCoordinates);
-    }
-
-    public ShareCoordinateCommand(final ConcurrentHashMap<UUID, Map<String, Coordinate>> savedCoordinates,
-                                  final boolean global) {
-        super(savedCoordinates, global);
+    public ShareCoordinateCommand(final CoordinateService coordinateService, final boolean global) {
+        super(coordinateService, global);
     }
 
     @Override
-    public int runCommand(final CommandContext<ServerCommandSource> context) {
-        final Coordinate coord = getCoordinate(context);
-        if (coord != null) {
-            final MutableText text = literal(String.format("%s shared %s coordinate %s: ",
-                    getPlayer(context).getName().getString(), global ? "global" : "personal",
-                    getCoordinateName(context))).append(formatCoordinateforChat(coord));
-            context.getSource().getServer().getPlayerManager().broadcast(text, false);
-            return 1;
+    public int run(final CommandContext<ServerCommandSource> context) throws CommandSyntaxException {
+        final var coordinate = getCoordinate(context);
+        if (coordinate == null) {
+            throw COORDINATE_NOT_FOUND.create(global, getCoordinateName(context));
         }
-        missingCoordinate(context);
-        return -1;
+        final var text = literal(format("%s shared %s coordinate %s: ",
+                getPlayer(context).getName().getString(), global ? "global" : "personal", coordinate.name()))
+                .append(formatCoordinateforChat(coordinate));
+        context.getSource().getServer().getPlayerManager().broadcast(text, false);
+        return SINGLE_SUCCESS;
     }
 }

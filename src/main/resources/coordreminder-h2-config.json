@@ -1,0 +1,4 @@
+{
+  "jdbcUrl": "jdbc:h2:./coordreminder/database",
+  "databaseType": "h2"
+}

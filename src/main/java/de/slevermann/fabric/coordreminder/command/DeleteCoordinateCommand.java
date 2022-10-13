@@ -2,35 +2,36 @@ package de.slevermann.fabric.coordreminder.command;
 
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
-import de.slevermann.fabric.coordreminder.Coordinate;
+import de.slevermann.fabric.coordreminder.db.CoordinateService;
 import net.minecraft.server.command.ServerCommandSource;
-import net.minecraft.text.Text;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
+import java.sql.SQLException;
 
 import static java.lang.String.format;
 import static net.minecraft.text.Text.of;
 
 public class DeleteCoordinateCommand extends NamedCoordinateCommand {
 
-    public DeleteCoordinateCommand(final ConcurrentHashMap<UUID, Map<String, Coordinate>> savedCoordinates,
-                                   final boolean global) {
-        super(savedCoordinates, global);
+    private static final Logger LOGGER = LoggerFactory.getLogger(DeleteCoordinateCommand.class);
+
+    public DeleteCoordinateCommand(final CoordinateService coordinateService, final boolean global) {
+        super(coordinateService, global);
     }
 
     @Override
-    public int runCommand(CommandContext<ServerCommandSource> context) {
-        final Coordinate coord = getCoordinate(context);
-
-        if (coord != null) {
-            getCoordinateMap(context).remove(getCoordinateName(context));
-            getPlayer(context).sendMessage(of(format("Deleted %s coordinate %s", global ? "global" : "personal",
-                    getCoordinateName(context))), false);
-            return 1;
+    public int run(final CommandContext<ServerCommandSource> context) throws CommandSyntaxException {
+        final var coordinateName = getCoordinateName(context);
+        try {
+            if (!coordinateService.deleteCoordinate(coordinateName, getUuid(context))) {
+                throw COORDINATE_NOT_FOUND.create(global, coordinateName);
+            }
+        } catch (final SQLException e) {
+            throw DB_ERROR.create(LOGGER, e);
         }
-        missingCoordinate(context);
-        return -1;
+        context.getSource().sendFeedback(of(format("%s coordinate %s deleted!",
+                global ? "Global" : "Personal", coordinateName)), false);
+        return SINGLE_SUCCESS;
     }
 }

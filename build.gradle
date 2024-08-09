@@ -1,14 +1,14 @@
 plugins {
-	id 'fabric-loom' version '1.0-SNAPSHOT'
+	id 'fabric-loom' version '1.7-SNAPSHOT'
 	id 'maven-publish'
 }
 
-sourceCompatibility = JavaVersion.VERSION_17
-targetCompatibility = JavaVersion.VERSION_17
-
-archivesBaseName = project.archives_base_name
 version = project.mod_version
 group = project.maven_group
+
+base {
+	archivesName = project.archives_base_name
+}
 
 repositories {
 	// Add repositories to retrieve artifacts from in here.
@@ -17,6 +17,18 @@ repositories {
 	// See https://docs.gradle.org/current/userguide/declaring_repositories.html
 	// for more information about repositories.
 }
+
+loom {
+	splitEnvironmentSourceSets()
+
+	mods {
+		"fabric-coordreminder" {
+			sourceSet sourceSets.main
+			sourceSet sourceSets.client
+		}
+	}
+}
+
 
 dependencies {
 	// To change the versions see the gradle.properties file
@@ -27,31 +39,34 @@ dependencies {
 	// Fabric API. This is technically optional, but you probably want it anyway.
 	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
 
-	modImplementation "com.zaxxer:HikariCP:5.0.1"
-	modImplementation "org.flywaydb:flyway-core:9.4.0"
-	modImplementation "org.flywaydb:flyway-mysql:9.4.0"
-	modImplementation "com.h2database:h2:2.1.214"
-	modImplementation "org.mariadb.jdbc:mariadb-java-client:3.0.8"
+	modImplementation "com.zaxxer:HikariCP:5.1.0"
+	modImplementation "org.flywaydb:flyway-core:10.17.0"
+	modImplementation "org.flywaydb:flyway-mysql:10.17.0"
+	modImplementation "com.h2database:h2:2.3.230"
+	modImplementation "org.mariadb.jdbc:mariadb-java-client:3.4.1"
 
 	// SQL dependencies
 	include "com.h2database:h2:2.1.214"
 	include "org.mariadb.jdbc:mariadb-java-client:3.0.8"
-	include "com.zaxxer:HikariCP:5.0.1"
-	include "org.flywaydb:flyway-core:9.4.0"
-	include "org.flywaydb:flyway-mysql:9.4.0"
-	include "com.electronwill.night-config:toml:3.6.6" // Dependency of Flyway
-	include "com.electronwill.night-config:core:3.6.6" // Dependency of night-config toml
+	include "com.zaxxer:HikariCP:5.1.0"
+	include "org.flywaydb:flyway-core:10.17.0"
+	include "org.flywaydb:flyway-mysql:10.17.0"
+	include "com.fasterxml.jackson.dataformat:jackson-dataformat-toml:2.15.2"
+	include "com.fasterxml.jackson.core:jackson-annotations:2.15.2"
+	include "com.fasterxml.jackson.core:jackson-core:2.15.2"
+	include "com.fasterxml.jackson.core:jackson-databind:2.15.2"
 }
 
 processResources {
+	inputs.property "version", project.version
+
 	filesMatching("fabric.mod.json") {
 		expand project.properties
 	}
 }
 
 tasks.withType(JavaCompile).configureEach {
-	// Minecraft 1.18 (1.18-pre2) upwards uses Java 17.
-	it.options.release = 17
+	it.options.release = 21
 }
 
 java {
@@ -59,18 +74,22 @@ java {
 	// if it is present.
 	// If you remove this line, sources will not be generated.
 	withSourcesJar()
+
+	sourceCompatibility = JavaVersion.VERSION_21
+	targetCompatibility = JavaVersion.VERSION_21
 }
 
 jar {
 	from("LICENSE") {
-		rename { "${it}_${project.archivesBaseName}"}
+		rename { "${it}_${project.base.archivesName.get()}"}
 	}
 }
 
 // configure the maven publication
 publishing {
 	publications {
-		mavenJava(MavenPublication) {
+		create("mavenJava", MavenPublication) {
+			artifactId = project.archives_base_name
 			from components.java
 		}
 	}

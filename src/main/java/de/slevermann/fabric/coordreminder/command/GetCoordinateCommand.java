@@ -17,7 +17,7 @@ public class GetCoordinateCommand extends NamedCoordinateCommand {
         if (coordinate == null) {
             throw COORDINATE_NOT_FOUND.create(global, getCoordinateName(context));
         }
-        context.getSource().sendFeedback(formatCoordinateforChat(coordinate), false);
+        context.getSource().sendFeedback(() -> formatCoordinateforChat(coordinate), false);
         return SINGLE_SUCCESS;
     }
 }

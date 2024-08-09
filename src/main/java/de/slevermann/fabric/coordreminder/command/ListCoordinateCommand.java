@@ -39,7 +39,7 @@ public class ListCoordinateCommand extends CoordinateCommand {
                 text.append(System.lineSeparator());
             }
         }
-        context.getSource().sendFeedback(text, false);
+        context.getSource().sendFeedback(() -> text, false);
         return SINGLE_SUCCESS;
     }
 }

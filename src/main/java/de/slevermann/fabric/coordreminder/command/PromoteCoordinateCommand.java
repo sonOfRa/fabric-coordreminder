@@ -37,7 +37,7 @@ public class PromoteCoordinateCommand extends MoveCoordinateCommand {
         } catch (SQLException e) {
             throw DB_ERROR.create(LOGGER, e);
         }
-        context.getSource().sendFeedback(of(format("Personal coordinate %s is now global coordinate %s",
+        context.getSource().sendFeedback(() -> of(format("Personal coordinate %s is now global coordinate %s",
                 name, globalName)), false);
         return SINGLE_SUCCESS;
     }

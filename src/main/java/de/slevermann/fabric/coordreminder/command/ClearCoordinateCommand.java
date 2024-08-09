@@ -22,7 +22,7 @@ public class ClearCoordinateCommand extends CoordinateCommand {
     public int run(final CommandContext<ServerCommandSource> context) throws CommandSyntaxException {
         try {
             int deletedCount = coordinateService.clearCoordinates(getUuid(context));
-            context.getSource().sendFeedback(Text.literal(String.format("Successfully deleted %d %s coordinates",
+            context.getSource().sendFeedback(() -> Text.literal(String.format("Successfully deleted %d %s coordinates",
                     deletedCount, global ? "global" : "personal")), false);
         } catch (SQLException e) {
             throw DB_ERROR.create(LOGGER, e);

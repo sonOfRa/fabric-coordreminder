@@ -4,17 +4,17 @@ import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.exceptions.Dynamic4CommandExceptionType;
 import de.slevermann.fabric.coordreminder.db.CoordinateService;
+import net.minecraft.registry.RegistryKey;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.server.world.ServerWorld;
-import net.minecraft.util.registry.Registry;
-import net.minecraft.util.registry.RegistryKey;
+import net.minecraft.registry.Registry;
 import net.minecraft.world.World;
 
 import static java.lang.String.format;
 import static net.minecraft.text.Text.literal;
 import static net.minecraft.text.Text.of;
 import static net.minecraft.util.Identifier.tryParse;
-import static net.minecraft.util.registry.RegistryKey.ofRegistry;
+import static net.minecraft.registry.RegistryKey.ofRegistry;
 
 public class TeleportCoordinateCommand extends NamedCoordinateCommand {
 
@@ -52,7 +52,7 @@ public class TeleportCoordinateCommand extends NamedCoordinateCommand {
         }
         final var player = getPlayer(context);
         player.teleport(world, coordinate.x(), coordinate.y(), coordinate.z(), player.getYaw(), player.getPitch());
-        context.getSource().sendFeedback(literal("Teleported to: ").append(formatCoordinateforChat(coordinate)),
+        context.getSource().sendFeedback(() -> literal("Teleported to: ").append(formatCoordinateforChat(coordinate)),
                 false);
         return SINGLE_SUCCESS;
     }

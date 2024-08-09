@@ -36,7 +36,7 @@ public class RenameCoordinateCommand extends MoveCoordinateCommand {
         } catch (SQLException e) {
             throw DB_ERROR.create(LOGGER, e);
         }
-        context.getSource().sendFeedback(of(format("%s coordinate %s is now named %s",
+        context.getSource().sendFeedback(() -> of(format("%s coordinate %s is now named %s",
                 global ? "Global" : "Personal", oldName, newName)), false);
         return SINGLE_SUCCESS;
     }

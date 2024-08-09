@@ -36,7 +36,7 @@ public class SetCoordinateCommand extends NamedCoordinateCommand {
         } catch (final SQLException e) {
             throw DB_ERROR.create(LOGGER, e);
         }
-        context.getSource().sendFeedback(of(format("Coordinate %s created", coordinateName)), false);
+        context.getSource().sendFeedback(() -> of(format("Coordinate %s created", coordinateName)), false);
         return SINGLE_SUCCESS;
     }
 }

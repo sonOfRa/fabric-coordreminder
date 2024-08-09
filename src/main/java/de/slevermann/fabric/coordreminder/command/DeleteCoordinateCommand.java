@@ -30,7 +30,7 @@ public class DeleteCoordinateCommand extends NamedCoordinateCommand {
         } catch (final SQLException e) {
             throw DB_ERROR.create(LOGGER, e);
         }
-        context.getSource().sendFeedback(of(format("%s coordinate %s deleted!",
+        context.getSource().sendFeedback(() -> of(format("%s coordinate %s deleted!",
                 global ? "Global" : "Personal", coordinateName)), false);
         return SINGLE_SUCCESS;
     }
